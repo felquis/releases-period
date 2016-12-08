@@ -1,9 +1,14 @@
 import React, { Component } from 'react';
 import logo from './logo.svg';
 import './App.css';
+import releases from './lib/releases'
 
 class App extends Component {
   render() {
+    releases().then((result) => {
+      console.log(result.diffInDays, result.releases.length, result.diffInDays / result.releases.length)
+    })
+
     return (
       <div className="App">
         <div className="App-header">
