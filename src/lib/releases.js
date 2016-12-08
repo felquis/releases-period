@@ -1,5 +1,4 @@
 import releases from './node-releases-list.js'
-import { curry } from 'ramda'
 import { differenceInCalendarDays } from 'date-fns'
 
 const regexMatchReleaseLine =
@@ -10,39 +9,42 @@ const regexMatchReleaseLine =
 */
 
 const diffInDays = differenceInCalendarDays
+const releasesFn = () => {
+  return new Promise((resolve, reject) => {
+    const resolved = releases
+    .split('\n')
+    .map((version) => {
+      const matches = version.match(regexMatchReleaseLine)
 
-export default () => new Promise((resolve, reject) => {
+      return Array.isArray(matches) ?
+        ({
+          date: matches[1],
+          version: matches[2],
+          releaser: matches[4]
+        }) : false
+    })
+    .filter((release) => !!release)
+    .reduce((acc, release, index, releases) => {
 
-  const resolved = releases
-  .split('\n')
-  .map((version) => {
-    const matches = version.match(regexMatchReleaseLine)
+      // first array item
+      if (index === 0) {
+        acc.firstDate = release.date
+      }
 
-    return Array.isArray(matches) ?
-      ({
-        date: matches[1],
-        version: matches[2],
-        releaser: matches[4]
-      }) : false
+
+      // last array item
+      if (releases.length - 1 !== index) { return acc }
+
+      acc.lastDate = release.date
+      acc.diffInDays = diffInDays(acc.firstDate, acc.lastDate)
+      acc.releases = releases
+      acc.averageDay = Math.floor(acc.diffInDays / acc.releases.length)
+
+      return acc
+    }, {})
+
+    resolve(resolved)
   })
-  .filter((release) => !!release)
-  .reduce((acc, release, index, releases) => {
+}
 
-    // first array item
-    if (index === 0) {
-      acc.firstDate = release.date
-    }
-
-
-    // last array item
-    if (releases.length - 1 !== index) { return acc }
-
-    acc.lastDate = release.date
-    acc.diffInDays = diffInDays(acc.firstDate, acc.lastDate)
-    acc.releases = releases
-
-    return acc
-  }, {})
-
-  resolve(resolved)
-})
+export default releasesFn
